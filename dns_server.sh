@@ -34,7 +34,7 @@ INSTALLPACKAGES="bind bind-utils"
 
 if yum list installed bind >&5 2>&5
 then
-	systemctl -q is-actuve named && {
+	systemctl -q is-active named && {
 	systemctl stop named
 	systemctl -q disable named
 	}
@@ -56,3 +56,32 @@ sed -i "s/127.0.0.1;/127.0.0.1;$IPSERVER;/" /etc/named.conf
 sed -i "s/localhost;/localhost;$IPCLIENT;/" /etc/named.conf
 
 systemctl enable --now named
+
+FWDFILENAME="fwd.$DOMAIN.db"
+# forward lookup zone
+sed -i "/include.*rfc1912/i zone \"$DOMAIN\" {" /etc/named.conf
+sed -i "/include.*rfc1912/i  type master;" /etc/named.conf
+sed -i "/include.*rfc1912/i  file \"$FWDFILENAME\";" /etc/named.conf
+sed -i "/include.*rfc1912/i };"  /etc/named.conf
+
+REVERSEIP=`echo $IPSERVER | awk -F . '{print $3"."$2"."$1}'`
+REVERSEFILENAME="$REVERSEIP.db"
+# reverse lookup zone
+sed -i "/include.*rfc1912/i zone \"$REVERSEIP.in-addr.arpa\" {" /etc/named.conf
+sed -i "/include.*rfc1912/i	type master;" /etc/named.conf
+sed -i "/include.*rfc1912/i	file \"$REVERSEFILENAME\";" /etc/named.conf
+sed -i "/include.*rfc1912/i };"  /etc/named.conf
+
+rm -rf /var/named/$FWDFILENAME
+echo "\$TTL 86400" >> /var/named/$FWDFILENAME
+echo "@		IN SOA $FQDN. root.$DOMAIN. (" >> /var/named/$FWDFILENAME
+echo "			10030	;Serial" >> /var/named/$FWDFILENAME
+echo "			3600	;Refresh" >> /var/named/$FWDFILENAME
+echo "			1800	;Retry" >> /var/named/$FWDFILENAME
+echo "			604800	;Expire" >>/var/named/$FWDFILENAME
+echo "			86400	;Minimum TTL" >> /var/named/$FWDFILENAME
+echo ")" >> /var/named/$FWDFILENAME
+echo "; Name Server" >> /var/named/$FWDFILENAME
+echo "@		IN 	NS	$FQDN." >> /var/named/$FWDFILENAME
+echo "; A Record Definitions" >> /var/named/$FWDFILENAME
+echo "named	IN	A	$IPDOMAIN" >> /var/named/$FWDFILENAME

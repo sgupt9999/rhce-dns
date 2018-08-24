@@ -1,5 +1,8 @@
 # common inputs for server and client file
 IPSERVER="172.31.44.127"
-IPCLIENT="172.172.172.172"
+IPCLIENT="172.31.99.59"
+DOMAIN="mylabserver.com"
+FQDN="garfield99993.mylabserver.com"
+IPDOMAIN="8.8.8.8"
 LOG_FILE="/tmp/install_dns.log"
 COMMON_FILE="https://raw.githubusercontent.com/sgupt9999/common/master/common_fn" # Location of the common function
