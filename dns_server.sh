@@ -55,7 +55,11 @@ print_msg_done
 sed -i "s/127.0.0.1;/127.0.0.1;$IPSERVER;/" /etc/named.conf  #  ips the server is listening on
 sed -i "s/localhost;/localhost;$IPCLIENT;/" /etc/named.conf  #  ips the server accepts queries from
 
-systemctl enable --now named
+systemctl -q enable --now named
+
+# Creating zone files
+MESSAGE="Creating zone files"
+print_msg_start
 
 FWDFILENAME="fwd.$DOMAIN.db"
 # forward lookup zone
@@ -99,4 +103,12 @@ echo ")" >> /var/named/$REVERSEFILENAME
 echo "; Name Server" >> /var/named/$REVERSEFILENAME
 echo "@		IN 	NS	$FQDN." >> /var/named/$REVERSEFILENAME
 echo "; Pointer Records" >> /var/named/$REVERSEFILENAME
-echo "$REVERSEIP	IN	PTR	$IPDOMAIN" >> /var/named/$REVERSEFILENAME
+echo "$REVERSEIP	IN	PTR	$FQDN." >> /var/named/$REVERSEFILENAME
+
+print_msg_done
+
+
+MESSAGE="DNS Server created. Zone files created for $FQDN and $IPDOMAIN"
+print_msg_start
+systemctl restart named
+print_msg_done
