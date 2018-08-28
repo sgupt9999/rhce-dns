@@ -52,19 +52,19 @@ yum install -y -q $INSTALLPACKAGES >&5 2>&5
 print_msg_done
 
 # Config changes for a caching server
-sed -i "s/127.0.0.1;/127.0.0.1;$IPSERVER;/" /etc/named.conf
-sed -i "s/localhost;/localhost;$IPCLIENT;/" /etc/named.conf
+sed -i "s/127.0.0.1;/127.0.0.1;$IPSERVER;/" /etc/named.conf  #  ips the server is listening on
+sed -i "s/localhost;/localhost;$IPCLIENT;/" /etc/named.conf  #  ips the server accepts queries from
 
 systemctl enable --now named
 
 FWDFILENAME="fwd.$DOMAIN.db"
 # forward lookup zone
-sed -i "/include.*rfc1912/i zone \"$DOMAIN\" {" /etc/named.conf
+sed -i "/include.*rfc1912/i zone \"$DOMAIN\" {" /etc/named.conf   # Insert before the include statement
 sed -i "/include.*rfc1912/i  type master;" /etc/named.conf
 sed -i "/include.*rfc1912/i  file \"$FWDFILENAME\";" /etc/named.conf
 sed -i "/include.*rfc1912/i };"  /etc/named.conf
 
-REVERSEIP=`echo $IPSERVER | awk -F . '{print $3"."$2"."$1}'`
+REVERSEIP=`echo $IPDOMAIN | awk -F . '{print $3"."$2"."$1}'`
 REVERSEFILENAME="$REVERSEIP.db"
 # reverse lookup zone
 sed -i "/include.*rfc1912/i zone \"$REVERSEIP.in-addr.arpa\" {" /etc/named.conf
@@ -84,4 +84,19 @@ echo ")" >> /var/named/$FWDFILENAME
 echo "; Name Server" >> /var/named/$FWDFILENAME
 echo "@		IN 	NS	$FQDN." >> /var/named/$FWDFILENAME
 echo "; A Record Definitions" >> /var/named/$FWDFILENAME
-echo "named	IN	A	$IPDOMAIN" >> /var/named/$FWDFILENAME
+echo "$HOST	IN	A	$IPDOMAIN" >> /var/named/$FWDFILENAME
+
+REVERSEIP=`echo $IPDOMAIN | awk -F . '{print $4}'`
+rm -rf /var/named/$REVERSEFILENAME
+echo "\$TTL 86400" >> /var/named/$REVERSEFILENAME
+echo "@		IN SOA $FQDN. root.$DOMAIN. (" >> /var/named/$REVERSEFILENAME
+echo "			10030	;Serial" >> /var/named/$REVERSEFILENAME
+echo "			3600	;Refresh" >> /var/named/$REVERSEFILENAME
+echo "			1800	;Retry" >> /var/named/$REVERSEFILENAME
+echo "			604800	;Expire" >>/var/named/$REVERSEFILENAME
+echo "			86400	;Minimum TTL" >> /var/named/$REVERSEFILENAME
+echo ")" >> /var/named/$REVERSEFILENAME
+echo "; Name Server" >> /var/named/$REVERSEFILENAME
+echo "@		IN 	NS	$FQDN." >> /var/named/$REVERSEFILENAME
+echo "; Pointer Records" >> /var/named/$REVERSEFILENAME
+echo "$REVERSEIP	IN	PTR	$IPDOMAIN" >> /var/named/$REVERSEFILENAME
