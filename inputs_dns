@@ -1,6 +1,6 @@
 # common inputs for server and client file
-IPSERVER="172.31.25.17" # DNS Server
-IPCLIENT="172.31.111.152" # DNS Client
+IPSERVER="172.31.13.189" # DNS Server
+IPCLIENT="172.31.0.214" # DNS Client
 
 # Start of Name record Information
 DOMAIN="linux.rocks"

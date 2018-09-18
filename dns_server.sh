@@ -27,6 +27,11 @@ then
 	echo "ERROR. You need to have root privileges to run this script" >&5
 	echo "##########################################################" >&5
 	exit 1
+else
+	echo
+	echo "#####################################################"
+	echo "This script will install a DNS server on this machine"
+	echo "#####################################################"
 fi
 
 yum install wget -y -q > /dev/null 2>&1
