@@ -1,13 +1,13 @@
 # common inputs for server and client file
-IPSERVER="172.31.118.82" # DNS Server
-IPCLIENT="172.31.102.66" # DNS Client
+IPSERVER="172.31.25.17" # DNS Server
+IPCLIENT="172.31.111.152" # DNS Client
 
-# Name record Information
-DOMAIN="mysite.com"
-HOST="garfield99994"
-#FQDN="garfield99994.mylabserver.com"
+# Start of Name record Information
+DOMAIN="linux.rocks"
+HOST="db"
 FQDN="$HOST.$DOMAIN"
 IPDOMAIN="80.80.80.80"
 # End of name record information
+
 LOG_FILE="/tmp/install_dns.log"
 COMMON_FILE="https://raw.githubusercontent.com/sgupt9999/common/master/common_fn" # Location of the common function

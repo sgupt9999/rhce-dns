@@ -5,6 +5,10 @@
 # Start of user inputs
 ############################################################################################
 
+FIREWALL="yes" # Firewalld should be up and running
+#FIREWALL="no"
+
+############################################################################################
 # End of user inputs
 ############################################################################################
 
@@ -25,9 +29,9 @@ then
 	exit 1
 fi
 
-yum install wget -y -q
+yum install wget -y -q > /dev/null 2>&1
 rm -rf common_fn
-wget $COMMON_FILE
+wget -q $COMMON_FILE
 source ./common_fn
 
 INSTALLPACKAGES="bind bind-utils"
@@ -38,8 +42,6 @@ then
 	systemctl stop named
 	systemctl -q disable named
 	}
-
-
 	MESSAGE="Removing old copy of bind"
 	print_msg_start
 	yum remove -y -q bind >&5 2>&5
@@ -52,8 +54,8 @@ yum install -y -q $INSTALLPACKAGES >&5 2>&5
 print_msg_done
 
 # Config changes for a caching server
-sed -i "s/127.0.0.1;/127.0.0.1;$IPSERVER;/" /etc/named.conf  #  ips the server is listening on
-sed -i "s/localhost;/localhost;$IPCLIENT;/" /etc/named.conf  #  ips the server accepts queries from
+sed -i "s/.*listen-on port 53.*/\tlisten-on port 53 {127.0.0.1;$IPSERVER;};/" /etc/named.conf  #  ips the server is listening on
+sed -i "s/.*allow-query.*/\tallow-query {localhost;$IPCLIENT;};/" /etc/named.conf  #  ips the server accepts queries from
 
 systemctl -q enable --now named
 
@@ -76,6 +78,7 @@ sed -i "/include.*rfc1912/i	type master;" /etc/named.conf
 sed -i "/include.*rfc1912/i	file \"$REVERSEFILENAME\";" /etc/named.conf
 sed -i "/include.*rfc1912/i };"  /etc/named.conf
 
+# Create zone files
 rm -rf /var/named/$FWDFILENAME
 echo "\$TTL 86400" >> /var/named/$FWDFILENAME
 echo "@		IN SOA $FQDN. root.$DOMAIN. (" >> /var/named/$FWDFILENAME
@@ -108,7 +111,22 @@ echo "$REVERSEIP	IN	PTR	$FQDN." >> /var/named/$REVERSEFILENAME
 print_msg_done
 
 
-MESSAGE="DNS Server created. Zone files created for $FQDN and $IPDOMAIN"
-print_msg_start
+if [[ $FIREWALL == "yes" ]]
+then
+	if systemctl -q is-active firewalld
+	then
+		MESSAGE="Adding DNS to firewall"
+		print_msg_start
+		firewall-cmd -q --permanent --add-service dns
+		firewall-cmd -q --reload
+		print_msg_done
+	else
+		MESSAGE="Firewalld not running. No changes made to firewall"
+		print_msg_header
+	fi
+fi
+
+
 systemctl restart named
-print_msg_done
+MESSAGE="DNS Server created. Zone files created for $FQDN and $IPDOMAIN"
+print_msg_header
